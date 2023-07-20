@@ -85,11 +85,8 @@ fn main() {
         .build(tauri::generate_context!())
     {
         Ok(app) => {
-            println!("Started");
             let mut store = StoreBuilder::new(app.handle(), get_store_path()).build();
-            println!("Store: {:?}", store);
             if !store.has("duration") {
-                println!("No duration");
                 store.insert("duration".to_string(), json!(300)).unwrap();
                 store.save().unwrap();
             }
