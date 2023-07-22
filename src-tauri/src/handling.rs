@@ -6,7 +6,6 @@ use async_std::channel::Receiver;
 use async_std::channel::Sender;
 use async_std::task;
 use tauri::Manager;
-use tauri::State;
 use tauri::Wry;
 use tauri_plugin_store::with_store;
 use tauri_plugin_store::StoreCollection;

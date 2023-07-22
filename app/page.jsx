@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/tauri'
+import Link from "next/link";
 
 import {
   FaPlayCircle,
@@ -49,7 +50,7 @@ const Pomo = () => {
   }, [])
 
   return (
-    <div className='flex flex-col w-full align-center justify-center h-screen bg-white border p-4'>
+    <div className='flex flex-col w-full align-center mt-16 h-screen'>
       <div className='text-8xl mx-auto w-full text-black  text-center'>{timer}</div>
       <div className='flex justify-center align-center mx-auto'>
         {running ?
@@ -59,7 +60,6 @@ const Pomo = () => {
         }
         <FaMinusCircle size={160} color="red" className='mt-4 w-48 rounded' onClick={handleReset} />
       </div>
-
     </div>
   )
 }
