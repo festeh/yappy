@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
+pub mod dbus;
 pub mod state;
-
+pub mod notification;
 
 pub fn get_store_path() -> PathBuf {
     let mut path = PathBuf::from(env!("XDG_DATA_HOME"));

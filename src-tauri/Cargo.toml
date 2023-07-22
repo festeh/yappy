@@ -1,11 +1,11 @@
 [package]
-name = "app"
+name = "yappy"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
+description = "Yet another pomodoro app..........."
+authors = ["Dima Lipin"]
+license = "MIT"
 repository = ""
-default-run = "app"
+default-run = "yappy"
 edition = "2021"
 rust-version = "1.60"
 
@@ -22,6 +22,8 @@ async-std = { version = "1.12.0" }
 futures = "0.3.25"
 anyhow = "1.0.65"
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+zbus = "3.14.1"
+notify-rust = "4"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
