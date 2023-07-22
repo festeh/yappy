@@ -4,7 +4,6 @@
 use async_std::task;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use yappy::notification::send_notification;
 use std::{thread, time::Duration};
 use tauri::Wry;
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu};
@@ -12,7 +11,8 @@ use tauri_plugin_store::with_store;
 use tauri_plugin_store::StoreBuilder;
 use tauri_plugin_store::StoreCollection;
 use yappy::dbus::DBus;
-use yappy::get_store_path;
+use yappy::notification::send_notification;
+use yappy::{get_store_path, seconds_to_string};
 
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
@@ -47,16 +47,25 @@ async fn countdown(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState
     let duration = match state.lock().unwrap().remaining {
         Some(d) => d,
         None => with_store(handle.clone(), stores, get_store_path(), |store| {
-            let dura = store.get("duration").expect("duration exist").clone();
+            let dura = store
+                .get("duration")
+                .expect("duration does not exist")
+                .clone();
             Ok(dura.as_u64())
         })
         .expect("Failed to get duration from store")
         .expect("Duration is None"),
     };
     for i in (1..=duration).rev() {
+        let seconds_str = seconds_to_string(i);
         if state.lock().unwrap().pause_switch {
+            handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
+            state
+                .lock()
+                .unwrap()
+                .dbus
+                .send(&format!("{} (paused)", seconds_str));
             handle.emit_to("main", "pomo_paused", "").unwrap();
-            state.lock().unwrap().dbus.send(&format!("{} (paused)", i));
             return;
         }
         if state.lock().unwrap().kill_switch {
@@ -67,10 +76,9 @@ async fn countdown(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState
             return;
         }
         println!("Time remaining: {} seconds", i);
-        {}
-        state.lock().unwrap().dbus.send(&i.to_string());
+        handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
+        state.lock().unwrap().dbus.send(&seconds_str);
         state.lock().unwrap().remaining = Some(i);
-        handle.emit_to("main", "pomo_step", i).unwrap();
         task::sleep(Duration::from_secs(1)).await;
     }
     handle.emit_to("main", "pomo_step", 0).unwrap();
@@ -78,6 +86,21 @@ async fn countdown(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState
     state.lock().unwrap().dbus.send("Waiting");
     send_notification("Pomodoro finished!");
     state.lock().unwrap().remaining = None;
+}
+
+#[tauri::command]
+fn get_duration(handle: tauri::AppHandle) -> String {
+                    let stores = handle.state::<StoreCollection<Wry>>();
+    let duration = with_store(handle.clone(), stores, get_store_path(), |store| {
+        let dura = store
+            .get("duration")
+            .expect("duration does not exist")
+            .clone();
+        Ok(dura.as_u64())
+    })
+    .expect("Duration is None")
+    .expect("Duration is None");
+    seconds_to_string(duration)
 }
 
 #[tauri::command]
@@ -110,10 +133,10 @@ fn main() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(state)
         .setup(|app| {
-            let main_window = app.get_window("main").unwrap();
+            app.get_window("main").unwrap();
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![run, pause, reset])
+        .invoke_handler(tauri::generate_handler![get_duration, run, pause, reset])
         .build(tauri::generate_context!())
     {
         Ok(app) => {

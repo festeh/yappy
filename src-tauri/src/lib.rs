@@ -13,3 +13,9 @@ pub fn get_store_path() -> PathBuf {
     path.push("store.json");
     path
 }
+
+pub fn seconds_to_string(seconds: u64) -> String {
+    let minutes = seconds / 60;
+    let seconds = seconds % 60;
+    format!("{:02}:{:02}", minutes, seconds)
+}

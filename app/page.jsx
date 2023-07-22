@@ -1,21 +1,14 @@
 "use client"
 
-
 import { useEffect, useState } from 'react'
-import { listen, emit } from '@tauri-apps/api/event'
+import { listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/tauri'
 
 import {
   FaPlayCircle,
   FaPauseCircle,
 } from "react-icons/fa";
-//
-function secondsToPomoTime(payload) {
-  const minutes = Math.floor(payload / 60) % 60
-  let seconds = payload % 60
-  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-}
-//
+
 const Pomo = () => {
   function handleClick() {
     if (!running) {
@@ -25,26 +18,26 @@ const Pomo = () => {
     }
   }
 
-  const [timer, setTimer] = useState("05:00");
+  const [timer, setTimer] = useState("");
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
-    console.log("Boom")
+    const dur = invoke('get_duration');
+    setTimer(dur);
     listen('pomo_started', (e) => {
       setRunning(true);
-    }, [])
+    });
     listen('pomo_finished', (e) => {
       setRunning(false);
-    }, [])
+    });
     listen('pomo_paused', (e) => {
       setRunning(false);
-    }, [])
+    });
     listen('pomo_step', (e) => {
-      console.log(e)
-      const pomoTime = secondsToPomoTime(e.payload);
+      const pomoTime = e.payload;
       setTimer(pomoTime);
-    }, [])
-  })
+    });
+  }, [])
 
   return (
     <div className='flex flex-col w-full align-center justify-center h-screen bg-white border p-4'>
