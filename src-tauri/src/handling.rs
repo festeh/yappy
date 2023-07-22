@@ -17,7 +17,18 @@ use crate::seconds_to_string;
 use crate::state::AppState;
 use crate::InternalMessage;
 
+fn set_tray_menu_item(handle: &tauri::AppHandle, id: &str, enabled: bool) {
+    handle
+        .tray_handle()
+        .get_item(id)
+        .set_enabled(enabled)
+        .expect("Unable to change menu item");
+}
+
 async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
+    set_tray_menu_item(&handle, "start", false);
+    set_tray_menu_item(&handle, "pause", true);
+    set_tray_menu_item(&handle, "reset", true);
     handle.emit_to("main", "pomo_started", "").unwrap();
     send_notification("Pomodoro started!");
     state.lock().unwrap().pause_switch = false;
@@ -85,6 +96,9 @@ pub fn handle_messages(
                 }
                 InternalMessage::PomoPaused => {
                     state.lock().unwrap().pause_switch = true;
+                    set_tray_menu_item(&handle, "start", true);
+                    set_tray_menu_item(&handle, "pause", false);
+                    set_tray_menu_item(&handle, "reset", true);
                 }
                 InternalMessage::PomoReseted => {
                     if state.lock().unwrap().pause_switch {
@@ -95,6 +109,9 @@ pub fn handle_messages(
                     } else {
                         state.lock().unwrap().kill_switch = true;
                     }
+                    set_tray_menu_item(&handle, "start", true);
+                    set_tray_menu_item(&handle, "pause", false);
+                    set_tray_menu_item(&handle, "reset", false);
                 }
                 InternalMessage::PomoFinished => {}
             }

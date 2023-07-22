@@ -2,18 +2,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use async_std::channel::bounded;
-use async_std::task;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use yappy::handling::handle_messages;
-use std::time::Duration;
 use tauri::{SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 use tauri::{SystemTrayEvent, Wry};
 use tauri_plugin_store::with_store;
 use tauri_plugin_store::StoreBuilder;
 use tauri_plugin_store::StoreCollection;
 use yappy::dbus::DBus;
-use yappy::notification::send_notification;
 use yappy::state::AppState;
 use yappy::{get_store_path, seconds_to_string, InternalMessage};
 
@@ -22,7 +18,7 @@ use tauri::Manager;
 use tauri::State;
 
 #[tauri::command]
-fn get_duration(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>) -> String {
+fn get_duration(handle: tauri::AppHandle) -> String {
     let stores = handle.state::<StoreCollection<Wry>>();
     let duration = with_store(handle.clone(), stores, get_store_path(), |store| {
         let dura = store
@@ -62,10 +58,12 @@ fn main() {
     let (s, r) = bounded::<InternalMessage>(256);
     let s_tray = s.clone();
     let state = Arc::new(Mutex::new(AppState::new(&s)));
-    let quit_item = tauri::CustomMenuItem::new("quit".to_string(), "Quit");
-    let run_item = tauri::CustomMenuItem::new("run".to_string(), "Run");
+    let run_item = tauri::CustomMenuItem::new("start".to_string(), "Start");
     let pause_item = tauri::CustomMenuItem::new("pause".to_string(), "Pause");
     let reset_item = tauri::CustomMenuItem::new("reset".to_string(), "Reset");
+    let pause_item = pause_item.disabled();
+    let reset_item = reset_item.disabled();
+    let quit_item = tauri::CustomMenuItem::new("quit".to_string(), "Quit");
     let tray_menu = SystemTrayMenu::new()
         .add_item(run_item)
         .add_native_item(SystemTrayMenuItem::Separator)
@@ -79,8 +77,14 @@ fn main() {
         .system_tray(system_tray)
         .on_system_tray_event(move |app, event| match event {
             SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-                "run" => {
+                "start" => {
                     s_tray.try_send(InternalMessage::PomoStarted).unwrap();
+                }
+                "pause" => {
+                    s_tray.try_send(InternalMessage::PomoPaused).unwrap();
+                }
+                "reset" => {
+                    s_tray.try_send(InternalMessage::PomoReseted).unwrap();
                 }
                 "quit" => {
                     let dbus = DBus::new();
