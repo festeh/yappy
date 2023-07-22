@@ -1,8 +1,18 @@
-use std::path::PathBuf;
-
 pub mod dbus;
 pub mod state;
 pub mod notification;
+pub mod handling;
+
+
+use std::path::PathBuf;
+
+#[derive(Debug, Clone)]
+pub enum InternalMessage {
+    PomoStarted,
+    PomoFinished,
+    PomoPaused,
+    PomoReseted,
+}
 
 pub fn get_store_path() -> PathBuf {
     let mut path = PathBuf::from(env!("XDG_DATA_HOME"));
