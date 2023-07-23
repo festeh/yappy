@@ -54,7 +54,6 @@ impl PersistentStore {
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
-        println!("get {}", key);
         self.cache.get(key)
     }
 
