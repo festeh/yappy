@@ -2,19 +2,16 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
+use crate::notification::send_notification;
+use crate::seconds_to_string;
+use crate::state::AppState;
+use crate::InternalMessage;
 use async_std::channel::Receiver;
 use async_std::channel::Sender;
 use async_std::task;
 use tauri::Manager;
 use tauri::Wry;
-use tauri_plugin_store::with_store;
 use tauri_plugin_store::StoreCollection;
-
-use crate::get_store_path;
-use crate::notification::send_notification;
-use crate::seconds_to_string;
-use crate::state::AppState;
-use crate::InternalMessage;
 
 fn set_tray_menu_item(handle: &tauri::AppHandle, id: &str, enabled: bool) {
     handle
@@ -32,19 +29,18 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
     send_notification("Pomodoro started!");
     state.lock().unwrap().pause_switch = false;
     state.lock().unwrap().kill_switch = false;
-    let stores = handle.state::<StoreCollection<Wry>>();
-    let duration = match state.lock().unwrap().remaining {
+    let remaining = state.lock().unwrap().remaining;
+
+    let duration: u64 = match remaining {
         Some(d) => d,
-        None => with_store(handle.clone(), stores, get_store_path(), |store| {
-            let dura = store
-                .get("duration")
-                .expect("duration does not exist")
-                .clone();
-            Ok(dura.as_u64())
-        })
-        .expect("Failed to get duration from store")
-        .expect("Duration is None"),
+        None => {
+            println!("No duration");
+            let sett = &state.lock().unwrap().settings;
+            println!("Settings: {:?}", sett);
+            sett.get("duration").unwrap().to_int()
+        }
     };
+    println!("Duration: {}", duration);
     for i in (1..=duration).rev() {
         let seconds_str = seconds_to_string(i);
         if state.lock().unwrap().pause_switch {
@@ -70,7 +66,9 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
         state.lock().unwrap().remaining = Some(i);
         task::sleep(Duration::from_secs(1)).await;
     }
-    handle.emit_to("main", "pomo_step", 0).unwrap();
+    handle
+        .emit_to("main", "pomo_step", seconds_to_string(0))
+        .unwrap();
     handle.emit_to("main", "pomo_finished", "").unwrap();
     state.lock().unwrap().dbus.send("Waiting");
     send_notification("Pomodoro finished!");
@@ -113,6 +111,11 @@ pub fn handle_messages(
                     set_tray_menu_item(&handle, "reset", false);
                 }
                 InternalMessage::PomoFinished => {}
+                InternalMessage::DurationChanged(d) => state
+                    .lock()
+                    .unwrap()
+                    .settings
+                .set("duration".into(), crate::store::Value::Int(d)),
             }
         }
     });

@@ -2,19 +2,24 @@
 
 import React from 'react'
 import {useEffect, useState} from 'react'
+import {invoke} from '@tauri-apps/api/tauri'
+import {emit} from '@tauri-apps/api/event'
+
 
 const TIMES = [5, 10, 15, 20, 25, 30].map(t => t * 60);
 
 const Settings = () => {
 
   function onDurationChange(e) {
-    setDuration(e.target.value);
+    let d = +e.target.innerText
+    emit('duration_changed', d * 60)
+    setDuration(d * 60)
   }
 
-  const [duration, setDuration] = useState(-1);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    
+    invoke('get_duration_seconds').then(d => setDuration(d));
   }, [])
 
   return (
@@ -24,11 +29,15 @@ const Settings = () => {
         Duration
       </div>
       {
-        TIMES.map(t => (
-          <div className="flex rounded-md shadow-xl items-center px-2 h-12 w-20 justify-center bg-green-300">
-            <span className="font-bold text-center">{t / 60}</span>
+        TIMES.map(t => {
+          let color = "bg-green-600";
+          if (t === duration) {
+            color = "bg-red-600";
+          }
+          return <div key={t} className={`${color} flex rounded-md shadow-xl items-center px-2 h-12 w-20 justify-center font-bold`} onClick={onDurationChange}>
+            {t / 60}
           </div>
-        ))
+        })
       }
     </div>
   )

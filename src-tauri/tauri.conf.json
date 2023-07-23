@@ -62,8 +62,7 @@
         "height": 600,
         "resizable": true,
         "title": "yappy",
-        "width": 800,
-        "url": "settings"
+        "width": 800
       }
     ]
   }

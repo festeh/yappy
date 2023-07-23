@@ -2,38 +2,47 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use async_std::channel::bounded;
-use serde_json::json;
-use yappy::handling::handle_messages;
+use tauri::SystemTrayEvent;
 use tauri::{SystemTray, SystemTrayMenu, SystemTrayMenuItem};
-use tauri::{SystemTrayEvent, Wry};
-use tauri_plugin_store::with_store;
-use tauri_plugin_store::StoreBuilder;
-use tauri_plugin_store::StoreCollection;
 use yappy::dbus::DBus;
+use yappy::handling::handle_messages;
 use yappy::state::AppState;
-use yappy::{get_store_path, seconds_to_string, InternalMessage};
+use yappy::store::{get_store_path, PersistentStore};
+use yappy::{seconds_to_string, InternalMessage};
 
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 use tauri::State;
 
+fn load_duration(state: State<'_, Arc<Mutex<AppState>>>) -> u64 {
+    state
+        .lock()
+        .unwrap()
+        .settings
+        .get("duration")
+        .unwrap()
+        .to_int()
+}
+
 #[tauri::command]
-fn get_duration(handle: tauri::AppHandle) -> String {
-    let stores = handle.state::<StoreCollection<Wry>>();
-    let duration = with_store(handle.clone(), stores, get_store_path(), |store| {
-        let dura = store
-            .get("duration")
-            .expect("duration does not exist")
-            .clone();
-        Ok(dura.as_u64())
-    })
-    .expect("Internal error in get_duration")
-    .expect("Duration is None");
+fn get_duration(state: State<'_, Arc<Mutex<AppState>>>) -> String {
+    let duration = load_duration(state);
     seconds_to_string(duration)
 }
 
+#[tauri::command]
+fn get_duration_seconds(state: State<'_, Arc<Mutex<AppState>>>) -> u64 {
+    let duration = load_duration(state);
+    duration
+}
+
 fn send_message(msg: InternalMessage, state: State<'_, Arc<Mutex<AppState>>>) {
-    state.lock().unwrap().s.try_send(msg.clone()).expect(&format!("Failed to send {:?}", &msg));
+    state
+        .lock()
+        .unwrap()
+        .s
+        .try_send(msg.clone())
+        .expect(&format!("Failed to send {:?}", &msg));
 }
 
 #[tauri::command]
@@ -54,10 +63,7 @@ async fn reset(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>)
     Ok(())
 }
 
-fn main() {
-    let (s, r) = bounded::<InternalMessage>(256);
-    let s_tray = s.clone();
-    let state = Arc::new(Mutex::new(AppState::new(&s)));
+fn get_tray() -> SystemTray {
     let run_item = tauri::CustomMenuItem::new("start".to_string(), "Start");
     let pause_item = tauri::CustomMenuItem::new("pause".to_string(), "Pause");
     let reset_item = tauri::CustomMenuItem::new("reset".to_string(), "Reset");
@@ -72,7 +78,14 @@ fn main() {
         .add_item(reset_item)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit_item);
-    let system_tray = SystemTray::new().with_menu(tray_menu);
+    SystemTray::new().with_menu(tray_menu)
+}
+
+fn main() {
+    let (s, r) = bounded::<InternalMessage>(256);
+    let s_tray = s.clone();
+    let state = Arc::new(Mutex::new(AppState::new(&s)));
+    let system_tray = get_tray();
     match tauri::Builder::default()
         .system_tray(system_tray)
         .on_system_tray_event(move |app, event| match event {
@@ -95,20 +108,31 @@ fn main() {
             },
             _ => {}
         })
-        .plugin(tauri_plugin_store::Builder::default().build())
         .manage(state.clone())
         .setup(|app| {
             app.get_window("main").unwrap();
+            let handle = app.handle();
+            app.listen_global("duration_changed", move |event| {
+                let payload = event.payload().expect("Payload is empty");
+                let duration: u64 = payload.parse::<u64>().unwrap();
+                let state = handle.state::<Arc<Mutex<AppState>>>().clone();
+                send_message(InternalMessage::DurationChanged(duration), state);
+            });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_duration, run, pause, reset])
+        .invoke_handler(tauri::generate_handler![
+            get_duration,
+            get_duration_seconds,
+            run,
+            pause,
+            reset
+        ])
         .build(tauri::generate_context!())
     {
         Ok(app) => {
-            let mut store = StoreBuilder::new(app.handle(), get_store_path()).build();
-            if !store.has("duration") {
-                store.insert("duration".to_string(), json!(300)).unwrap();
-                store.save().unwrap();
+            let mut store = PersistentStore::new(get_store_path());
+            if !store.check("duration") {
+                store.set("duration".into(), yappy::store::Value::Int(300))
             }
             handle_messages(app.handle(), state, s, r);
             app.run(|_app, event| match event {
@@ -129,4 +153,3 @@ fn main() {
         }
     };
 }
-

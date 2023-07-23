@@ -2,9 +2,8 @@ pub mod dbus;
 pub mod state;
 pub mod notification;
 pub mod handling;
+pub mod store;
 
-
-use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub enum InternalMessage {
@@ -12,17 +11,9 @@ pub enum InternalMessage {
     PomoFinished,
     PomoPaused,
     PomoReseted,
+    DurationChanged(u64),
 }
 
-pub fn get_store_path() -> PathBuf {
-    let mut path = PathBuf::from(env!("XDG_DATA_HOME"));
-    path.push("yappy");
-    if !path.exists() {
-        std::fs::create_dir_all(&path).unwrap();
-    }
-    path.push("store.json");
-    path
-}
 
 pub fn seconds_to_string(seconds: u64) -> String {
     let minutes = seconds / 60;
