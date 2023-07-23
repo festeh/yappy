@@ -10,8 +10,8 @@ use async_std::channel::Receiver;
 use async_std::channel::Sender;
 use async_std::task;
 use tauri::Manager;
-use tauri::Wry;
-use tauri_plugin_store::StoreCollection;
+
+
 
 fn set_tray_menu_item(handle: &tauri::AppHandle, id: &str, enabled: bool) {
     handle
@@ -78,7 +78,7 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
 pub fn handle_messages(
     handle: tauri::AppHandle,
     state: Arc<Mutex<AppState>>,
-    s: Sender<InternalMessage>,
+    _s: Sender<InternalMessage>,
     r: Receiver<InternalMessage>,
 ) {
     async_std::task::spawn(async move {

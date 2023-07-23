@@ -58,7 +58,7 @@ async fn pause(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), ()> {
 }
 
 #[tauri::command]
-async fn reset(handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), ()> {
+async fn reset(_handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), ()> {
     send_message(InternalMessage::PomoReseted, state);
     Ok(())
 }
@@ -88,7 +88,7 @@ fn main() {
     let system_tray = get_tray();
     match tauri::Builder::default()
         .system_tray(system_tray)
-        .on_system_tray_event(move |app, event| match event {
+        .on_system_tray_event(move |_app, event| match event {
             SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
                 "start" => {
                     s_tray.try_send(InternalMessage::PomoStarted).unwrap();
