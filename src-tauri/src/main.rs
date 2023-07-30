@@ -63,6 +63,11 @@ async fn reset(_handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>
     Ok(())
 }
 
+#[tauri::command]
+fn load_tasks(state: State<'_, Arc<Mutex<AppState>>>) {
+    send_message(InternalMessage::TasksRequested, state);
+}
+
 fn get_tray() -> SystemTray {
     let run_item = tauri::CustomMenuItem::new("start".to_string(), "Start");
     let pause_item = tauri::CustomMenuItem::new("pause".to_string(), "Pause");
@@ -125,7 +130,8 @@ fn main() {
             get_duration_seconds,
             run,
             pause,
-            reset
+            reset,
+            load_tasks
         ])
         .build(tauri::generate_context!())
     {

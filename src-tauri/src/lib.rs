@@ -3,6 +3,7 @@ pub mod state;
 pub mod notification;
 pub mod handling;
 pub mod store;
+pub mod todoist;
 
 
 #[derive(Debug, Clone)]
@@ -12,6 +13,7 @@ pub enum InternalMessage {
     PomoPaused,
     PomoReseted,
     DurationChanged(u64),
+    TasksRequested,
 }
 
 

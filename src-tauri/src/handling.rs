@@ -5,13 +5,12 @@ use std::time::Duration;
 use crate::notification::send_notification;
 use crate::seconds_to_string;
 use crate::state::AppState;
+use crate::todoist::get_tasks;
 use crate::InternalMessage;
 use async_std::channel::Receiver;
 use async_std::channel::Sender;
 use async_std::task;
 use tauri::Manager;
-
-
 
 fn set_tray_menu_item(handle: &tauri::AppHandle, id: &str, enabled: bool) {
     handle
@@ -115,7 +114,20 @@ pub fn handle_messages(
                     .lock()
                     .unwrap()
                     .settings
-                .set("duration".into(), crate::store::Value::Int(d)),
+                    .set("duration".into(), crate::store::Value::Int(d)),
+                InternalMessage::TasksRequested => {
+                    let tasks = get_tasks().await;
+                    match tasks {
+                        Ok(tasks) => {
+                            handle.emit_to("main", "tasks_loaded", tasks).unwrap();
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {:?}", e);
+                            let empty_res: Vec<String> = Vec::new();
+                            handle.emit_to("main", "tasks_loaded", empty_res).unwrap();
+                        }
+                    }
+                }
             }
         }
     });

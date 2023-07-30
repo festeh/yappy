@@ -1,6 +1,10 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import Link from "next/link";
+import { GiTomato } from "react-icons/gi";
+import { FaTasks } from "react-icons/fa";
+import { LuSettings } from "react-icons/lu";
+import { TfiStatsUp } from "react-icons/tfi";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -10,15 +14,24 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const iconSize = 120;
   return (
     <html lang="en">
       <body className={inter.className}>
         <div className="bg-white">
-          <nav className="flex justify-evenly justify-items-end text-2xl p-2 font-bold h-4 border-xl">
-            <Link href="/">Home</Link>
-            <Link href="/tasks">Tasks</Link>
-            <Link href="/stats">Stats</Link>
-            <Link href="/settings">Settings</Link>
+          <nav className="flex justify-evenly justify-items-end text-2xl p-2 mb-32 font-bold h-4 border-xl">
+            <Link href="/">
+              <GiTomato color="red" size={iconSize} />
+            </Link>
+            <Link href="/tasks">
+              <FaTasks color="teal" size={iconSize} />
+            </Link>
+            <Link href="/stats">
+              <TfiStatsUp color="blue" size={iconSize} />
+            </Link>
+            <Link href="/settings">
+              <LuSettings color="gray" size={iconSize} />
+            </Link>
           </nav>
           {children}
         </div>
