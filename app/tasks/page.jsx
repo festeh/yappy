@@ -4,6 +4,15 @@ import { IoReloadCircle } from 'react-icons/io5';
 import { invoke } from '@tauri-apps/api/tauri'
 import { listen } from '@tauri-apps/api/event'
 import { useEffect, useState } from 'react'
+import { List, Typography } from 'antd'
+
+const data = [
+  'Racing car sprays burning fuel into crowd.',
+  'Japanese princess to wed commoner.',
+  'Australian walks 100km after outback crash.',
+  'Man charged over missing wedding girl.',
+  'Los Angeles battles huge wildfires.',
+];
 
 const Tasks = () => {
 
@@ -23,17 +32,19 @@ const Tasks = () => {
   return (
     <div className="border">
       <div className="flex items-end flex-end justify-end">
-        <IoReloadCircle size={100} color="blue" className='mr-4 rounded' onClick={onClick} />
+        <IoReloadCircle size={90} color="blue" className='mr-4 rounded' onClick={onClick} />
       </div>
-
-      <div>
-        <ul id="tasks">
-          {tasks.map(task => (
-
-            <li key={task.id}>{task.content}</li>))}
-        </ul>
+      <div className="mt-2">
+        <List dataSource={tasks}
+          size="large"
+          bordered
+          renderItem={(task) => (
+            <List.Item className="text-xl" key={task.id}>
+              {task.content}
+            </List.Item>
+          )}>
+        </List>
       </div>
-
     </div>
   )
 }
