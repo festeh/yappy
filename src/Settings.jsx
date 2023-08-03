@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/tauri'
 import { emit } from '@tauri-apps/api/event'
+import { Divider } from 'antd';
 
+import ApiKeyForm from './components/ApiKeyForm'
 
 const TIMES = [5, 10, 15, 20, 25, 30].map(t => t * 60);
 
@@ -20,22 +22,33 @@ const Settings = () => {
   }, [])
 
   return (
-    <div className="flex mt-20 h-screen justify-start space-x-1 mx-auto w-full">
-      <div
-        className='flex h-12 font-bold text-xl items-center justify-center w-20 mr-8 ml-4'>
-        Duration
+    <div className="h-full">
+      <Divider />
+      <div className="flex mt-8 mb-8 justify-start space-x-1 mx-auto w-full">
+        <div
+          className='flex h-12 font-bold text-xl  justify-left w-48 mr-8 ml-4'>
+          Pomodoro Duration
+        </div>
+        {
+          TIMES.map(t => {
+            let color = "bg-green-600";
+            if (t === duration) {
+              color = "bg-red-600";
+            }
+            return <div key={t} className={`${color} flex rounded-md shadow-xl items-center px-2 h-12 w-20 justify-center font-bold`} onClick={onDurationChange}>
+              {t / 60}
+            </div>
+          })
+        }
       </div>
-      {
-        TIMES.map(t => {
-          let color = "bg-green-600";
-          if (t === duration) {
-            color = "bg-red-600";
-          }
-          return <div key={t} className={`${color} flex rounded-md shadow-xl items-center px-2 h-12 w-20 justify-center font-bold`} onClick={onDurationChange}>
-            {t / 60}
-          </div>
-        })
-      }
+      <Divider />
+      <div className="mt-8 flex">
+        <div
+          className='flex h-12 font-bold text-xl justify-left w-44 mr-12 ml-4'>
+          Todoist API Key
+        </div>
+        <ApiKeyForm />
+      </div>
     </div>
   )
 }
