@@ -1,9 +1,6 @@
-"use client"
-
-import React from 'react'
-import {useEffect, useState} from 'react'
-import {invoke} from '@tauri-apps/api/tauri'
-import {emit} from '@tauri-apps/api/event'
+import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/tauri'
+import { emit } from '@tauri-apps/api/event'
 
 
 const TIMES = [5, 10, 15, 20, 25, 30].map(t => t * 60);
@@ -24,8 +21,8 @@ const Settings = () => {
 
   return (
     <div className="flex mt-20 h-screen justify-start space-x-1 mx-auto w-full">
-      <div 
-    className='flex h-12 font-bold text-xl items-center justify-center w-20 mr-8 ml-4'>
+      <div
+        className='flex h-12 font-bold text-xl items-center justify-center w-20 mr-8 ml-4'>
         Duration
       </div>
       {

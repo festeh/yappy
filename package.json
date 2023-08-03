@@ -3,27 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite",
     "tauri": "tauri"
   },
   "dependencies": {
     "antd": "^5.7.3",
-    "autoprefixer": "10.4.14",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.10",
-    "next": "13.4.10",
-    "postcss": "8.4.26",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "tailwindcss": "3.3.3",
     "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store#v1"
   },
   "devDependencies": {
     "@tauri-apps/api": "^1.4.0",
     "@tauri-apps/cli": "^1.4.0",
-    "react-icons": "^4.10.1"
+    "@vitejs/plugin-react": "^4.0.4",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.27",
+    "react-icons": "^4.10.1",
+    "tailwindcss": "^3.3.3",
+    "vite": "^4.4.8",
+    "wouter": "^2.11.0"
   }
 }
