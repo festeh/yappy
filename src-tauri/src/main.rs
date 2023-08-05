@@ -7,7 +7,7 @@ use tauri::{SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 use yappy::dbus::DBus;
 use yappy::handling::handle_messages;
 use yappy::state::AppState;
-use yappy::store::{get_store_path, PersistentStore};
+use yappy::store::{get_settings_store_path, PersistentStore, Value};
 use yappy::{seconds_to_string, InternalMessage};
 
 use std::sync::{Arc, Mutex};
@@ -20,7 +20,7 @@ fn load_duration(state: State<'_, Arc<Mutex<AppState>>>) -> u64 {
         .unwrap()
         .settings
         .get("duration")
-        .unwrap()
+        .unwrap_or_else(|| &Value::Int(300))
         .to_int()
 }
 
@@ -66,6 +66,11 @@ async fn reset(_handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>
 #[tauri::command]
 fn load_tasks(state: State<'_, Arc<Mutex<AppState>>>) {
     send_message(InternalMessage::TasksRequested, state);
+}
+
+#[tauri::command]
+fn save_todoist_api_key(key: String, state: State<'_, Arc<Mutex<AppState>>>) {
+    send_message(InternalMessage::TodoistApiKey(key), state);
 }
 
 fn get_tray() -> SystemTray {
@@ -131,12 +136,13 @@ fn main() {
             run,
             pause,
             reset,
-            load_tasks
+            load_tasks,
+            save_todoist_api_key
         ])
         .build(tauri::generate_context!())
     {
         Ok(app) => {
-            let mut store = PersistentStore::new(get_store_path());
+            let mut store = PersistentStore::new(get_settings_store_path());
             if !store.check("duration") {
                 store.set("duration".into(), yappy::store::Value::Int(300))
             }

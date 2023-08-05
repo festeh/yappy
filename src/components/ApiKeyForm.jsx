@@ -1,9 +1,11 @@
 import React from 'react';
 import { Form, Input, Button } from 'antd';
+import { invoke } from '@tauri-apps/api/tauri';
 
 const ApiKeyForm = () => {
   const onFinish = (values) => {
     console.log('Received values:', values);
+    invoke('save_todoist_api_key', { key: values.apiKey })
   };
 
   return (

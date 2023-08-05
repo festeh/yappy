@@ -32,21 +32,26 @@ pub struct PersistentStore {
     file_path: PathBuf,
 }
 
-pub fn get_store_path() -> PathBuf {
+pub fn get_settings_store_path() -> PathBuf {
     let mut path = PathBuf::from(env!("XDG_DATA_HOME"));
     path.push("yappy");
     if !path.exists() {
         std::fs::create_dir_all(&path).unwrap();
     }
-    path.push("store.json");
+    path.push("settings.json");
     path
 }
+
 
 impl PersistentStore {
     pub fn new(file_path: PathBuf) -> Self {
         let data = fs::read_to_string(&file_path).unwrap_or_else(|_| "{}".into());
         let cache: HashMap<String, Value> = serde_json::from_str(&data).unwrap();
         PersistentStore { cache, file_path }
+    }
+
+    pub fn new_settings() -> Self {
+        Self::new(get_settings_store_path())
     }
 
     pub fn check(&self, key: &str) -> bool {

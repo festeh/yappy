@@ -1,4 +1,3 @@
-
 import { IoReloadCircle } from 'react-icons/io5';
 import { invoke } from '@tauri-apps/api/tauri'
 import { listen } from '@tauri-apps/api/event'
@@ -15,7 +14,6 @@ const Tasks = () => {
 
   useEffect(() => {
     listen('tasks_loaded', (e) => {
-      console.log(e)
       setTasks(e.payload)
     })
   }, [])

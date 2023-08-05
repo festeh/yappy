@@ -116,7 +116,8 @@ pub fn handle_messages(
                     .settings
                     .set("duration".into(), crate::store::Value::Int(d)),
                 InternalMessage::TasksRequested => {
-                    let tasks = get_tasks().await;
+                    let api_key = state.lock().unwrap().settings.get("api_key").map(|s| s.to_string());
+                    let tasks = get_tasks(api_key).await;
                     match tasks {
                         Ok(tasks) => {
                             handle.emit_to("main", "tasks_loaded", tasks).unwrap();
@@ -127,6 +128,14 @@ pub fn handle_messages(
                             handle.emit_to("main", "tasks_loaded", empty_res).unwrap();
                         }
                     }
+                }
+                InternalMessage::TodoistApiKey(api_key) => {
+                    println!("API key: {}", api_key);
+                    state
+                        .lock()
+                        .unwrap()
+                        .settings
+                        .set("api_key".into(), crate::store::Value::Text(api_key));
                 }
             }
         }

@@ -14,6 +14,7 @@ pub enum InternalMessage {
     PomoReseted,
     DurationChanged(u64),
     TasksRequested,
+    TodoistApiKey(String),
 }
 
 

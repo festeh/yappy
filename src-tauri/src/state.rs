@@ -1,7 +1,7 @@
 use async_std::channel::Sender;
 use serde::Serialize;
 
-use crate::store::{get_store_path, PersistentStore};
+use crate::store::{get_settings_store_path, PersistentStore};
 use crate::{dbus::DBus, InternalMessage};
 
 #[derive(Debug, Serialize)]
@@ -23,7 +23,7 @@ impl AppState {
             kill_switch: false,
             remaining: None,
             dbus: DBus::new(),
-            settings: PersistentStore::new(get_store_path()),
+            settings: PersistentStore::new(get_settings_store_path()),
             s: s.clone(),
         }
     }
