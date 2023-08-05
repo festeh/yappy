@@ -1,7 +1,11 @@
+use std::sync::{Arc};
+
 use async_std::channel::Sender;
+use async_std::sync::Mutex;
 use serde::Serialize;
 
 use crate::store::{get_settings_store_path, PersistentStore};
+use crate::todoist::Todoist;
 use crate::{dbus::DBus, InternalMessage};
 
 #[derive(Debug, Serialize)]
@@ -11,6 +15,8 @@ pub struct AppState {
     pub remaining: Option<u64>,
     pub settings: PersistentStore,
     #[serde(skip)]
+    pub todoist: Arc<Mutex<Todoist>>,
+    #[serde(skip)]
     pub dbus: DBus,
     #[serde(skip)]
     pub s: Sender<InternalMessage>,
@@ -18,12 +24,17 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(s: &Sender<InternalMessage>) -> Self {
+        let settings = PersistentStore::new(get_settings_store_path());
+        let todoist = Arc::new(Mutex::new(Todoist::new(
+            settings.get("api_key").map(|s| s.to_string()),
+        )));
         Self {
             pause_switch: false,
             kill_switch: false,
             remaining: None,
             dbus: DBus::new(),
-            settings: PersistentStore::new(get_settings_store_path()),
+            settings,
+            todoist,
             s: s.clone(),
         }
     }

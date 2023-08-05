@@ -21,12 +21,19 @@ const Pomo = () => {
     invoke('reset')
   }
 
+  const [selectedTask, setSelectedTask] = useState("Select a task")
   const [timer, setTimer] = useState("");
   const [running, setRunning] = useState(false);
 
   const Initialize = async () => {
+
     const dur = await invoke('get_duration');
     setTimer(dur);
+
+    invoke('get_selected_task').then((task) => { setSelectedTask(task) }).catch((err) => {
+
+    })
+
     listen('pomo_started', (e) => {
       setRunning(true);
     });
@@ -56,6 +63,9 @@ const Pomo = () => {
 
   return (
     <div className='flex mt-40 flex-col w-full align-center h-screen'>
+      <div className='text-2xl text-center mb-8'>
+        {selectedTask}
+      </div>
       <div className='text-8xl mx-auto w-full text-black  text-center'>{timer}</div>
       <div className='flex justify-center align-center mx-auto'>
         {running ?

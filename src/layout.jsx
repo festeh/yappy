@@ -10,7 +10,7 @@ import { Link } from "wouter";
 export default function RootLayout({ children }) {
   const iconSize = 120;
   return (
-    <div className="bg-white">
+    <div className="bg-zinc-50">
       <nav className="">
         <ul className="flex justify-evenly justify-items-end text-2xl p-2 mb-32 font-bold h-4 border-xl">
           <Link key="/" href="/" >

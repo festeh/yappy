@@ -5,7 +5,8 @@ use std::time::Duration;
 use crate::notification::send_notification;
 use crate::seconds_to_string;
 use crate::state::AppState;
-use crate::todoist::get_tasks;
+use crate::store::Value;
+
 use crate::InternalMessage;
 use async_std::channel::Receiver;
 use async_std::channel::Sender;
@@ -18,6 +19,19 @@ fn set_tray_menu_item(handle: &tauri::AppHandle, id: &str, enabled: bool) {
         .get_item(id)
         .set_enabled(enabled)
         .expect("Unable to change menu item");
+}
+
+fn sliding_window(s: &str, window_size: usize) -> Vec<String> {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= window_size {
+        return vec![s.to_string()];
+    }
+    let mut strs: Vec<String> = chars
+        .windows(window_size)
+        .map(|window| window.iter().collect())
+        .collect();
+    strs.reverse();
+    strs
 }
 
 async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
@@ -35,11 +49,18 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
         None => {
             println!("No duration");
             let sett = &state.lock().unwrap().settings;
-            println!("Settings: {:?}", sett);
             sett.get("duration").unwrap().to_int()
         }
     };
     println!("Duration: {}", duration);
+    let selected_task = state
+        .lock()
+        .unwrap()
+        .settings
+        .get("selected_task")
+        .map(|s| s.to_string())
+        .unwrap_or("Not selected".into());
+    let windows = sliding_window(&selected_task, 24);
     for i in (1..=duration).rev() {
         let seconds_str = seconds_to_string(i);
         if state.lock().unwrap().pause_switch {
@@ -59,9 +80,10 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
             send_notification("Pomodoro abandoned!");
             return;
         }
-        println!("Time remaining: {} seconds", i);
         handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
-        state.lock().unwrap().dbus.send(&seconds_str);
+        let trunctated = windows.get(i as usize % windows.len()).unwrap();
+        let dbus_msg = format!("{} ({})", seconds_str, trunctated);
+        state.lock().unwrap().dbus.send(&dbus_msg);
         state.lock().unwrap().remaining = Some(i);
         task::sleep(Duration::from_secs(1)).await;
     }
@@ -80,6 +102,7 @@ pub fn handle_messages(
     _s: Sender<InternalMessage>,
     r: Receiver<InternalMessage>,
 ) {
+    let todoist = state.lock().unwrap().todoist.clone();
     async_std::task::spawn(async move {
         while let Ok(msg) = r.recv().await {
             match msg {
@@ -115,9 +138,9 @@ pub fn handle_messages(
                     .unwrap()
                     .settings
                     .set("duration".into(), crate::store::Value::Int(d)),
-                InternalMessage::TasksRequested => {
-                    let api_key = state.lock().unwrap().settings.get("api_key").map(|s| s.to_string());
-                    let tasks = get_tasks(api_key).await;
+                InternalMessage::TaskReloadRequested => {
+                    let _ = todoist.lock().await.update_tasks().await;
+                    let tasks = todoist.lock().await.get_tasks();
                     match tasks {
                         Ok(tasks) => {
                             handle.emit_to("main", "tasks_loaded", tasks).unwrap();
@@ -130,12 +153,25 @@ pub fn handle_messages(
                     }
                 }
                 InternalMessage::TodoistApiKey(api_key) => {
-                    println!("API key: {}", api_key);
                     state
                         .lock()
                         .unwrap()
                         .settings
-                        .set("api_key".into(), crate::store::Value::Text(api_key));
+                        .set("api_key".into(), crate::store::Value::Text(api_key.clone()));
+                    todoist.lock().await.set_api_key(Some(api_key));
+                }
+                InternalMessage::TaskSelected(id) => {
+                    let tasks = todoist.lock().await.get_tasks().unwrap_or(vec![]);
+                    for task in tasks {
+                        if task.id == id {
+                            state
+                                .lock()
+                                .unwrap()
+                                .settings
+                                .set("selected_task", Value::Text(task.content));
+                            break;
+                        }
+                    }
                 }
             }
         }

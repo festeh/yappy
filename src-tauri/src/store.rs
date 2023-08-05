@@ -1,13 +1,17 @@
-use std::{collections::HashMap, path::PathBuf};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::fs;
 use std::io::Write;
-use serde::{Serialize, Deserialize};
-use serde_json;
+use std::{collections::HashMap, path::PathBuf};
+
+use crate::todoist::Task;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Value {
     Int(u64),
     Text(String),
+    Tasks(Vec<Task>),
+    Projects(HashMap<String, Value>),
 }
 
 impl Value {
@@ -15,6 +19,8 @@ impl Value {
         match self {
             Value::Int(i) => i.to_string(),
             Value::Text(t) => t.clone(),
+            Value::Tasks(t) => serde_json::to_string(t).unwrap(),
+            Value::Projects(p) => serde_json::to_string(p).unwrap(),
         }
     }
 
@@ -42,6 +48,15 @@ pub fn get_settings_store_path() -> PathBuf {
     path
 }
 
+pub fn get_tasks_store_path() -> PathBuf {
+    let mut path = PathBuf::from(env!("XDG_DATA_HOME"));
+    path.push("yappy");
+    if !path.exists() {
+        std::fs::create_dir_all(&path).unwrap();
+    }
+    path.push("tasks.json");
+    path
+}
 
 impl PersistentStore {
     pub fn new(file_path: PathBuf) -> Self {
@@ -54,6 +69,10 @@ impl PersistentStore {
         Self::new(get_settings_store_path())
     }
 
+    pub fn new_tasks() -> Self {
+        Self::new(get_tasks_store_path())
+    }
+
     pub fn check(&self, key: &str) -> bool {
         self.cache.contains_key(key)
     }
@@ -62,8 +81,8 @@ impl PersistentStore {
         self.cache.get(key)
     }
 
-    pub fn set(&mut self, key: String, value: Value) {
-        self.cache.insert(key.clone(), value.clone());
+    pub fn set(&mut self, key: &str, value: Value) {
+        self.cache.insert(key.into(), value.clone());
         let file = fs::OpenOptions::new()
             .create(true)
             .write(true)

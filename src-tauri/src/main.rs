@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+
 use async_std::channel::bounded;
 use tauri::SystemTrayEvent;
 use tauri::{SystemTray, SystemTrayMenu, SystemTrayMenuItem};
@@ -8,6 +9,7 @@ use yappy::dbus::DBus;
 use yappy::handling::handle_messages;
 use yappy::state::AppState;
 use yappy::store::{get_settings_store_path, PersistentStore, Value};
+use yappy::todoist::Task;
 use yappy::{seconds_to_string, InternalMessage};
 
 use std::sync::{Arc, Mutex};
@@ -58,19 +60,50 @@ async fn pause(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), ()> {
 }
 
 #[tauri::command]
-async fn reset(_handle: tauri::AppHandle, state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), ()> {
+async fn reset(
+    _handle: tauri::AppHandle,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<(), ()> {
     send_message(InternalMessage::PomoReseted, state);
     Ok(())
 }
 
 #[tauri::command]
-fn load_tasks(state: State<'_, Arc<Mutex<AppState>>>) {
-    send_message(InternalMessage::TasksRequested, state);
+fn get_tasks(state: State<'_, Arc<Mutex<AppState>>>) -> Vec<Task> {
+    let res = async_std::task::block_on(async move {
+        state
+            .lock()
+            .unwrap()
+            .todoist
+            .lock()
+            .await
+            .get_tasks()
+            .unwrap()
+    });
+    res
+}
+
+#[tauri::command]
+fn reload_tasks(state: State<'_, Arc<Mutex<AppState>>>) {
+    send_message(InternalMessage::TaskReloadRequested, state);
 }
 
 #[tauri::command]
 fn save_todoist_api_key(key: String, state: State<'_, Arc<Mutex<AppState>>>) {
     send_message(InternalMessage::TodoistApiKey(key), state);
+}
+
+#[tauri::command]
+fn select_task(state: State<'_, Arc<Mutex<AppState>>>, id: String) {
+    send_message(InternalMessage::TaskSelected(id), state);
+}
+
+#[tauri::command]
+fn get_selected_task(state: State<'_, Arc<Mutex<AppState>>>) -> Result<String, String> {
+    match state.lock().unwrap().settings.get("selected_task") {
+        Some(Value::Text(id)) => Ok(id.into()),
+        _ => Err("No selected task".into()),
+    }
 }
 
 fn get_tray() -> SystemTray {
@@ -136,8 +169,11 @@ fn main() {
             run,
             pause,
             reset,
-            load_tasks,
-            save_todoist_api_key
+            get_tasks,
+            reload_tasks,
+            save_todoist_api_key,
+            select_task,
+            get_selected_task
         ])
         .build(tauri::generate_context!())
     {
