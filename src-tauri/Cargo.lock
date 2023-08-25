@@ -5169,6 +5169,7 @@ dependencies = [
  "firebase-rs",
  "futures",
  "notify-rust",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "surf",

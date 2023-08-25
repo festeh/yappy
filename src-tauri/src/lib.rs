@@ -5,6 +5,7 @@ pub mod handling;
 pub mod store;
 pub mod todoist;
 pub mod firebase;
+pub mod utils;
 
 
 #[derive(Debug, Clone)]

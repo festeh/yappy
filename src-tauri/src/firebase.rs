@@ -46,8 +46,8 @@ impl FirebaseClient {
 
     pub fn send_pomodoro_info(
         &self,
-        id: String,
-        task: String,
+        id: &str,
+        task: &str,
         status: PomodoroStatus,
     ) -> Result<(), anyhow::Error> {
         let Some(address) = &self.address else {
@@ -63,9 +63,9 @@ impl FirebaseClient {
             let now = current_time_formatted();
             let cursor = firebase.at(&now);
             let pomo_info = PomodoroInfo {
-                id,
+                id: id.to_owned(),
                 time: now,
-                task,
+                task: task.to_owned(),
                 status,
             };
             let _ = cursor.set(&pomo_info).await;

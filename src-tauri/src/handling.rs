@@ -2,10 +2,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
+use crate::firebase::PomodoroStatus;
 use crate::notification::send_notification;
 use crate::seconds_to_string;
 use crate::state::AppState;
 use crate::store::Value;
+use crate::utils;
 
 use crate::InternalMessage;
 use async_std::channel::Receiver;
@@ -34,7 +36,16 @@ fn sliding_window(s: &str, window_size: usize) -> Vec<String> {
     strs
 }
 
+fn send_firebase_msg(state: Arc<Mutex<AppState>>, id: &str, task: &str, status: PomodoroStatus) {
+    state
+        .lock()
+        .unwrap()
+        .firebase
+        .send_pomodoro_info(id, task, status);
+}
+
 async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
+    let id = utils::generate_random_id();
     set_tray_menu_item(&handle, "start", false);
     set_tray_menu_item(&handle, "pause", true);
     set_tray_menu_item(&handle, "reset", true);
@@ -59,8 +70,9 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
         .settings
         .get("selected_task")
         .map(|s| s.to_string())
-        .unwrap_or("Not selected".into());
+        .unwrap_or("None".into());
     let windows = sliding_window(&selected_task, 24);
+    send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Started);
     for i in (1..=duration).rev() {
         let seconds_str = seconds_to_string(i);
         if state.lock().unwrap().pause_switch {
@@ -78,6 +90,7 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
             state.lock().unwrap().remaining = None;
             state.lock().unwrap().dbus.send("Waiting");
             send_notification("Pomodoro abandoned!");
+            send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Cancelled);
             return;
         }
         handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
@@ -93,6 +106,7 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
     handle.emit_to("main", "pomo_finished", "").unwrap();
     state.lock().unwrap().dbus.send("Waiting");
     send_notification("Pomodoro finished!");
+    send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Finished);
     state.lock().unwrap().remaining = None;
 }
 
@@ -181,18 +195,16 @@ pub fn handle_messages(
                     }
                 }
                 InternalMessage::FirebaseAddress(address) => {
-                    state
-                        .lock()
-                        .unwrap()
-                        .settings
-                        .set("firebase_address".into(), crate::store::Value::Text(address.clone()));
+                    state.lock().unwrap().settings.set(
+                        "firebase_address".into(),
+                        crate::store::Value::Text(address.clone()),
+                    );
                 }
                 InternalMessage::FirebaseAuthKey(key) => {
-                    state
-                        .lock()
-                        .unwrap()
-                        .settings
-                        .set("firebase_auth_key".into(), crate::store::Value::Text(key.clone()));
+                    state.lock().unwrap().settings.set(
+                        "firebase_auth_key".into(),
+                        crate::store::Value::Text(key.clone()),
+                    );
                 }
             }
         }
