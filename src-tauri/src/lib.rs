@@ -4,6 +4,7 @@ pub mod notification;
 pub mod handling;
 pub mod store;
 pub mod todoist;
+pub mod firebase;
 
 
 #[derive(Debug, Clone)]
@@ -16,6 +17,9 @@ pub enum InternalMessage {
     TaskReloadRequested,
     TodoistApiKey(String),
     TaskSelected(String),
+    TaskUnselected,
+    FirebaseAddress(String),
+    FirebaseAuthKey(String),
 }
 
 

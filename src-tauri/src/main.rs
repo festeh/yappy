@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-
 use async_std::channel::bounded;
 use tauri::SystemTrayEvent;
 use tauri::{SystemTray, SystemTrayMenu, SystemTrayMenuItem};
@@ -94,8 +93,25 @@ fn save_todoist_api_key(key: String, state: State<'_, Arc<Mutex<AppState>>>) {
 }
 
 #[tauri::command]
-fn select_task(state: State<'_, Arc<Mutex<AppState>>>, id: String) {
-    send_message(InternalMessage::TaskSelected(id), state);
+fn save_firebase_address(address: String, state: State<'_, Arc<Mutex<AppState>>>) {
+    send_message(InternalMessage::FirebaseAddress(address), state);
+}
+
+#[tauri::command]
+fn save_firebase_auth_key(key: String, state: State<'_, Arc<Mutex<AppState>>>) {
+    send_message(InternalMessage::FirebaseAuthKey(key), state);
+}
+
+#[tauri::command]
+fn select_task(state: State<'_, Arc<Mutex<AppState>>>, id: Option<String>) {
+    match id {
+        Some(id) => {
+            send_message(InternalMessage::TaskSelected(id), state);
+        }
+        None => {
+            send_message(InternalMessage::TaskUnselected, state);
+        }
+    }
 }
 
 #[tauri::command]
@@ -173,7 +189,9 @@ fn main() {
             reload_tasks,
             save_todoist_api_key,
             select_task,
-            get_selected_task
+            get_selected_task,
+            save_firebase_address,
+            save_firebase_auth_key,
         ])
         .build(tauri::generate_context!())
     {

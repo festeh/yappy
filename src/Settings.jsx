@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/tauri'
 import { emit } from '@tauri-apps/api/event'
 import { Divider } from 'antd';
 
-import ApiKeyForm from './components/ApiKeyForm'
+import FormField from './components/FormField'
 
 const TIMES = [5, 10, 15, 20, 25, 30].map(t => t * 60);
 
@@ -44,10 +44,38 @@ const Settings = () => {
       <Divider />
       <div className="mt-8 flex">
         <div
-          className='flex h-12 font-bold text-xl justify-left w-44 mr-12 ml-4'>
+          className='flex h-20 font-bold text-xl justify-left w-44 mr-12 ml-4'>
           Todoist API Key
         </div>
-        <ApiKeyForm />
+        <FormField formName="apiKey" placeholder="Enter Todoist API Key" onFinish={
+          (values) => {
+            invoke('save_todoist_api_key', { key: values.apiKey })
+          }
+        } />
+      </div>
+      <Divider />
+      <div className="mt-8 flex">
+        <div
+          className='flex h-12 font-bold text-xl justify-left w-44 mr-12 ml-4'>
+          Firebase Address
+        </div>
+        <FormField formName="address" placeholder="Enter Firebase Address" onFinish={
+          (values) => {
+            invoke('save_firebase_address', { address: values.address })
+          }
+        } />
+      </div>
+      <Divider />
+      <div className="mt-8 flex">
+        <div
+          className='flex h-12 font-bold text-xl justify-left w-44 mr-12 ml-4'>
+          Firebase Auth Key
+        </div>
+        <FormField formName="authKey" placeholder="Enter Firebase Auth Key" onFinish={
+          (values) => {
+            invoke('save_firebase_auth_key', { key: values.authKey })
+          }
+        } />
       </div>
     </div>
   )

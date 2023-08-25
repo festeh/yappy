@@ -160,6 +160,13 @@ pub fn handle_messages(
                         .set("api_key".into(), crate::store::Value::Text(api_key.clone()));
                     todoist.lock().await.set_api_key(Some(api_key));
                 }
+                InternalMessage::TaskUnselected => {
+                    state
+                        .lock()
+                        .unwrap()
+                        .settings
+                        .set("selected_task", Value::Text("".into()));
+                }
                 InternalMessage::TaskSelected(id) => {
                     let tasks = todoist.lock().await.get_tasks().unwrap_or(vec![]);
                     for task in tasks {
@@ -172,6 +179,20 @@ pub fn handle_messages(
                             break;
                         }
                     }
+                }
+                InternalMessage::FirebaseAddress(address) => {
+                    state
+                        .lock()
+                        .unwrap()
+                        .settings
+                        .set("firebase_address".into(), crate::store::Value::Text(address.clone()));
+                }
+                InternalMessage::FirebaseAuthKey(key) => {
+                    state
+                        .lock()
+                        .unwrap()
+                        .settings
+                        .set("firebase_auth_key".into(), crate::store::Value::Text(key.clone()));
                 }
             }
         }

@@ -7,7 +7,9 @@ import { List, Typography } from 'antd'
 const Tasks = () => {
 
   function onReloadClick() {
-    invoke('reload_tasks')
+    invoke('reload_tasks').then((tasks) => {
+      invoke('select_task', {}).then((res) => { })
+    })
   }
 
   function onSelectClick(e) {
