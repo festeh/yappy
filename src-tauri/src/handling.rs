@@ -37,7 +37,7 @@ fn sliding_window(s: &str, window_size: usize) -> Vec<String> {
 }
 
 fn send_firebase_msg(state: Arc<Mutex<AppState>>, id: &str, task: &str, status: PomodoroStatus) {
-    state
+    let _ = state
         .lock()
         .unwrap()
         .firebase
@@ -90,7 +90,12 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
             state.lock().unwrap().remaining = None;
             state.lock().unwrap().dbus.send("Waiting");
             send_notification("Pomodoro abandoned!");
-            send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Cancelled);
+            send_firebase_msg(
+                state.clone(),
+                &id,
+                &selected_task,
+                PomodoroStatus::Cancelled,
+            );
             return;
         }
         handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
@@ -107,6 +112,9 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
     state.lock().unwrap().dbus.send("Waiting");
     send_notification("Pomodoro finished!");
     send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Finished);
+    set_tray_menu_item(&handle, "start", true);
+    set_tray_menu_item(&handle, "pause", false);
+    set_tray_menu_item(&handle, "reset", false);
     state.lock().unwrap().remaining = None;
 }
 
