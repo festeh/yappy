@@ -21,11 +21,7 @@ fn load_duration(state: State<'_, Arc<Mutex<AppState>>>) -> u64 {
         .unwrap()
         .settings
         .get("duration")
-<<<<<<< HEAD
         .unwrap_or_else(|| &Value::Int(300))
-=======
-        .unwrap_or(&Value::Int(100))
->>>>>>> a49b590 (fix)
         .to_int()
 }
 
