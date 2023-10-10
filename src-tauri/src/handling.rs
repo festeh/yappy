@@ -81,14 +81,14 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
                 .lock()
                 .unwrap()
                 .dbus
-                .send(&format!("{} (paused)", seconds_str));
+                .send(format!("{} (paused)", seconds_str));
             handle.emit_to("main", "pomo_paused", "").unwrap();
             return;
         }
         if state.lock().unwrap().kill_switch {
             handle.emit_to("main", "pomo_reseted", "").unwrap();
             state.lock().unwrap().remaining = None;
-            state.lock().unwrap().dbus.send("Waiting");
+            state.lock().unwrap().dbus.send("Waiting".to_owned());
             send_notification("Pomodoro abandoned!");
             send_firebase_msg(
                 state.clone(),
@@ -101,7 +101,7 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
         handle.emit_to("main", "pomo_step", &seconds_str).unwrap();
         let trunctated = windows.get(i as usize % windows.len()).unwrap();
         let dbus_msg = format!("{} ({})", seconds_str, trunctated);
-        state.lock().unwrap().dbus.send(&dbus_msg);
+        state.lock().unwrap().dbus.send(dbus_msg);
         state.lock().unwrap().remaining = Some(i);
         task::sleep(Duration::from_secs(1)).await;
     }
@@ -109,7 +109,7 @@ async fn countdown(handle: tauri::AppHandle, state: Arc<Mutex<AppState>>) {
         .emit_to("main", "pomo_step", seconds_to_string(0))
         .unwrap();
     handle.emit_to("main", "pomo_finished", "").unwrap();
-    state.lock().unwrap().dbus.send("Waiting");
+    state.lock().unwrap().dbus.send("Waiting".to_owned());
     send_notification("Pomodoro finished!");
     send_firebase_msg(state.clone(), &id, &selected_task, PomodoroStatus::Finished);
     set_tray_menu_item(&handle, "start", true);
@@ -145,7 +145,7 @@ pub fn handle_messages(
                     if state.lock().unwrap().pause_switch {
                         handle.emit_to("main", "pomo_reseted", "").unwrap();
                         state.lock().unwrap().remaining = None;
-                        state.lock().unwrap().dbus.send("Waiting");
+                        state.lock().unwrap().dbus.send("Waiting".to_owned());
                         state.lock().unwrap().pause_switch = false;
                     } else {
                         state.lock().unwrap().kill_switch = true;

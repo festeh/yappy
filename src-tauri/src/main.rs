@@ -160,7 +160,7 @@ fn main() {
                 }
                 "quit" => {
                     let dbus = DBus::new();
-                    dbus.send("Waiting");
+                    dbus.send("Waiting".to_owned());
                     std::process::exit(0);
                 }
                 _ => {}
@@ -204,12 +204,12 @@ fn main() {
             app.run(|_app, event| match event {
                 tauri::RunEvent::ExitRequested { api, .. } => {
                     let dbus = DBus::new();
-                    dbus.send("Waiting");
+                    dbus.send("Waiting".to_owned());
                     api.prevent_exit();
                 }
                 tauri::RunEvent::Exit => {
                     let dbus = DBus::new();
-                    dbus.send("Waiting");
+                    dbus.send("Waiting".to_owned());
                 }
                 _ => {}
             });
